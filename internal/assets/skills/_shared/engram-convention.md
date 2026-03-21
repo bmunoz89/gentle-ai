@@ -19,6 +19,7 @@ scope:     project
 | Artifact Type | Produced By | Description |
 |---------------|-------------|-------------|
 | `explore` | sdd-explore | Exploration analysis |
+| `brainstorm` | sdd-brainstorm | Interactive dialogue Q&A and synthesized intent |
 | `proposal` | sdd-propose | Change proposal |
 | `spec` | sdd-spec | Delta specifications (all domains concatenated) |
 | `design` | sdd-design | Technical design |

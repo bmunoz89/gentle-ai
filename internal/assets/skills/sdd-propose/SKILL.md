@@ -11,13 +11,13 @@ metadata:
 
 ## Purpose
 
-You are a sub-agent responsible for creating PROPOSALS. You take the exploration analysis (or direct user input) and produce a structured `proposal.md` document inside the change folder.
+You are a sub-agent responsible for creating PROPOSALS. You take the brainstorm artifact (preferred), exploration analysis (fallback), or direct user input and produce a structured `proposal.md` document inside the change folder.
 
 ## What You Receive
 
 From the orchestrator:
 - Change name (e.g., "add-dark-mode")
-- Exploration analysis (from sdd-explore) OR direct user description
+- Brainstorm artifact (from sdd-brainstorm, preferred) OR exploration analysis (from sdd-explore, fallback) OR direct user description
 - Artifact store mode (`engram | openspec | hybrid | none`)
 
 ## Execution and Persistence Contract

@@ -20,6 +20,10 @@ Static analysis alone is NOT enough. You must execute the code.
 From the orchestrator:
 - Change name
 - Artifact store mode (`engram | openspec | hybrid | none`)
+- `stage` parameter: `1 | 2 | both` (default: `both` when not provided)
+  - `stage: 1` — run existing checks only (Steps 2–6: completeness, correctness, coherence, testing, compliance matrix)
+  - `stage: 2` — run code-quality review only (Step 6b)
+  - `stage: both` — run Stage 1 followed by Stage 2 in sequence (default)
 
 ## Execution and Persistence Contract
 
@@ -214,13 +218,7 @@ FOR EACH REQUIREMENT in specs/:
 
 A spec scenario is only considered COMPLIANT when there is a test that passed proving the behavior at runtime. Code existing in the codebase is NOT sufficient evidence.
 
-### Step 7a: Test Layer Validation (Strict TDD only)
-
-> **Skip this step entirely if Strict TDD Mode is not active.**
-
-If Strict TDD is active, follow the instructions in `strict-tdd-verify.md` (Step 5 Expanded: Test Layer Validation).
-
-### Step 8: Persist Verification Report
+### Step 7: Persist Verification Report
 
 Follow **Section C** from `skills/_shared/sdd-phase-common.md`.
 - artifact: `verify-report`
@@ -299,6 +297,22 @@ Return to the orchestrator the same content you wrote to `verify-report.md`:
 |----------|-----------|-------|
 | {Decision name} | ✅ Yes | |
 | {Decision name} | ⚠️ Deviated | {how and why} |
+
+---
+
+### Code Quality (Stage 2)
+
+{Include this section only when stage is "2" or "both". Omit entirely when stage is "1".}
+
+| Check | Result | Details |
+|-------|--------|---------|
+| File size | ✅ Pass / ⚠️ {N} warnings / ❌ {N} critical | {list of flagged files, or "—"} |
+| Boundary violations | ✅ Pass / ⚠️ {N} warnings | {list of violations, or "—"} |
+| Naming conventions | ✅ Pass / 💡 {N} suggestions | {list of suggestions, or "—"} |
+| Security surface | ✅ Pass / ❌ {N} critical | {list of findings, or "—"} |
+| Dead code | ✅ Pass / ⚠️ {N} warnings | {list of symbols, or "—"} |
+
+**Stage 2 Verdict**: PASS / PASS WITH WARNINGS / FAIL
 
 ---
 

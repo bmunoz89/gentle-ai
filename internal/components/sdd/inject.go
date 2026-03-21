@@ -349,6 +349,7 @@ func Inject(homeDir string, adapter agents.Adapter, sddMode model.SDDModeID, opt
 				"openspec-convention.md",
 				"sdd-phase-common.md",
 				"skill-resolver.md",
+				"status-protocol.md",
 			}
 
 			for _, fileName := range sharedFiles {
@@ -372,7 +373,7 @@ func Inject(homeDir string, adapter agents.Adapter, sddMode model.SDDModeID, opt
 			}
 
 			sddSkills := []string{
-				"sdd-init", "sdd-explore", "sdd-propose", "sdd-spec",
+				"sdd-init", "sdd-explore", "sdd-propose", "sdd-brainstorm", "sdd-spec",
 				"sdd-design", "sdd-tasks", "sdd-apply", "sdd-verify", "sdd-archive",
 				"judgment-day",
 			}
@@ -530,7 +531,7 @@ func Inject(homeDir string, adapter agents.Adapter, sddMode model.SDDModeID, opt
 	if adapter.SupportsSkills() {
 		skillDir := adapter.SkillsDir(homeDir)
 		if skillDir != "" {
-			for _, skill := range []string{"sdd-init", "sdd-apply", "sdd-verify"} {
+			for _, skill := range []string{"sdd-init", "sdd-apply", "sdd-verify", "sdd-brainstorm"} {
 				path := filepath.Join(skillDir, skill, "SKILL.md")
 				info, err := os.Stat(path)
 				if err != nil {

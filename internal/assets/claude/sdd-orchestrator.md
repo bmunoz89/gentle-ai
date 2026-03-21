@@ -49,11 +49,12 @@ Skills (appear in autocomplete):
 - `/sdd-archive [change]` → close a change and persist final state in the active artifact store
 
 Meta-commands (type directly — orchestrator handles them, won't appear in autocomplete):
+- `/sdd-new-brainstorm <change>` -> run `sdd-brainstorm` then `sdd-propose`
 - `/sdd-new <change>` → start a new change by delegating exploration + proposal to sub-agents
 - `/sdd-continue [change]` → run the next dependency-ready phase via sub-agent(s)
 - `/sdd-ff <name>` → fast-forward planning: proposal → specs → design → tasks
 
-`/sdd-new`, `/sdd-continue`, and `/sdd-ff` are meta-commands handled by YOU. Do NOT invoke them as skills.
+`/sdd-new`, `/sdd-continue`, `/sdd-ff`, and `/sdd-new-brainstorm` are meta-commands handled by YOU. Do NOT invoke them as skills.
 
 ### Execution Mode
 
@@ -76,10 +77,11 @@ For this agent (sub-agent delegation): **Automatic** means phases run back-to-ba
 
 ### Dependency Graph
 ```
-proposal -> specs --> tasks -> apply -> verify -> archive
-             ^
-             |
-           design
+[brainstorm] --\
+                +--> proposal -> specs --> tasks -> apply -> verify -> archive
+[explore]    --/                  ^
+                                  |
+                                design
 ```
 
 ### Result Contract
@@ -149,6 +151,7 @@ Each phase has explicit read/write rules:
 
 | Phase | Reads | Writes |
 |-------|-------|--------|
+| `sdd-brainstorm` | nothing | `brainstorm` |
 | `sdd-explore` | nothing | `explore` |
 | `sdd-propose` | exploration (optional) | `proposal` |
 | `sdd-spec` | proposal (required) | `spec` |
@@ -165,6 +168,7 @@ For phases with required dependencies, sub-agent reads directly from the backend
 | Artifact | Topic Key |
 |----------|-----------|
 | Project context | `sdd-init/{project}` |
+| Brainstorm | `sdd/{change-name}/brainstorm` |
 | Exploration | `sdd/{change-name}/explore` |
 | Proposal | `sdd/{change-name}/proposal` |
 | Spec | `sdd/{change-name}/spec` |
@@ -178,6 +182,34 @@ For phases with required dependencies, sub-agent reads directly from the backend
 Sub-agents retrieve full content via two steps:
 1. `mem_search(query: "{topic_key}", project: "{project}")` → get observation ID
 2. `mem_get_observation(id: {id})` → full content (REQUIRED — search results are truncated)
+
+### NEEDS_CONTEXT Relay Loop
+
+When `sdd-brainstorm` returns `status: NEEDS_CONTEXT`, the orchestrator MUST handle it inline:
+
+1. Extract the `question` field from the sub-agent result
+2. Present the question to the user **verbatim** — do NOT rephrase or summarize it
+3. Collect the user's answer
+4. Re-launch `sdd-brainstorm` with the full prior Q&A context appended (the brainstorm sub-agent reads prior context from engram via `mem_search("sdd/{change-name}/brainstorm")`)
+5. Repeat steps 1–4 until status is `DONE`, `DONE_WITH_CONCERNS`, or `BLOCKED`
+6. Maintain a `brainstorm_iteration` counter. At iteration 5, include `max_iterations_reached: true` in the launch prompt — this instructs brainstorm to complete with whatever context exists
+7. If the 5th invocation still returns `NEEDS_CONTEXT`, force completion by re-launching with `force_complete: true`
+
+**Important**: Do NOT relay `NEEDS_CONTEXT` from phases other than `sdd-brainstorm` unless that phase's SKILL.md explicitly documents `NEEDS_CONTEXT` behavior.
+
+### Red Flag Gates
+
+These 7 rules are HARD safety constraints. Violating them is not allowed — surface each violation immediately to the user.
+
+| Gate | Rule | Response |
+|------|------|----------|
+| RFG-1 | `sdd-brainstorm` MUST NOT produce code, file lists, or implementation specs | If brainstorm result contains code blocks (``` fences) or file paths, reject the artifact and respond: "The brainstorm sub-agent produced code, which is not allowed during brainstorming. Please re-run /sdd-new-brainstorm with a more focused description." |
+| RFG-2 | `sdd-apply` MUST NOT expand scope beyond what the tasks artifact specifies | If apply reports new files or functions not in the tasks list, surface as BLOCKED and bring the question to the user before continuing |
+| RFG-3 | `sdd-tasks` MUST have an explicit dependency on both spec AND design | If tasks is launched without both artifacts present in engram, return an error to the user |
+| RFG-4 | `sdd-verify` MUST run before `sdd-archive` | If user requests `/sdd-archive` without a passing verify-report artifact, block and respond: "sdd-verify must pass before archiving. Run /sdd-verify {change-name} first." |
+| RFG-5 | `BLOCKED` status MUST always be surfaced to user | If any sub-agent returns `BLOCKED`, present `blocker_description` and `resolution_needed` to the user immediately — NEVER silently continue to the next phase |
+| RFG-6 | NEEDS_CONTEXT relay loop MUST NOT exceed 5 iterations | Enforced by the relay loop counter above |
+| RFG-7 | Spec changes after `sdd-spec` is complete MUST trigger re-running `sdd-spec` | If the user requests a scope or approach change to the proposal after the spec artifact exists, re-run `sdd-spec` before proceeding to `sdd-tasks`. Exception: cosmetic prose edits that do not affect scope or approach |
 
 ### State and Conventions
 
