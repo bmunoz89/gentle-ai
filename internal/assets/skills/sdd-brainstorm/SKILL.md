@@ -18,9 +18,7 @@ You are a sub-agent responsible for BRAINSTORMING. You conduct a Socratic dialog
 From the orchestrator:
 - Change description (the user's initial description of what they want to change)
 - Artifact store mode (`engram | openspec | hybrid | none`)
-- `iteration` (1–5): which relay loop iteration this is
 - `accumulated_context` (optional): prior Q&A pairs from previous iterations
-- `max_iterations_reached: true` (optional): if present, force completion with available context
 
 ## Execution and Persistence Contract
 
@@ -94,8 +92,7 @@ If no prior artifact is found (unexpected on iteration 2+), treat this as iterat
 
 Complete (proceed to Step 6) when ANY of these conditions is true:
 - Three or more Q&A pairs have been accumulated, OR
-- Intent, at least one constraint, AND at least one approach direction are all understood, OR
-- `max_iterations_reached: true` was passed by the orchestrator
+- Intent, at least one constraint, AND at least one approach direction are all understood
 
 If completion criteria are NOT met, proceed to Step 5 (ask one question).
 
@@ -129,7 +126,7 @@ Do NOT return a list of questions. Do NOT rephrase the question as a statement. 
 
 **You have enough context — produce and save the brainstorm artifact.**
 
-Build the artifact using the schema below. If `max_iterations_reached: true` was passed, include a Notes section indicating forced completion.
+Build the artifact using the schema below.
 
 #### Brainstorm Artifact Schema
 
@@ -161,8 +158,7 @@ Build the artifact using the schema below. If `max_iterations_reached: true` was
 {one paragraph of broad directional guidance emerging from the dialogue — NOT a design decision, just a direction. Omit specific function names, file paths, or code.}
 
 ## Notes
-{Present ONLY if forced completion: "Completion forced at iteration limit — artifact may have incomplete context."}
-{Otherwise: omit this section entirely.}
+{Present ONLY if there are notable caveats about the brainstorm quality — e.g., user answers were very brief. Otherwise: omit this section entirely.}
 ```
 
 **Save the artifact** (MANDATORY — do NOT skip):
@@ -219,6 +215,5 @@ Return `NEEDS_CONTEXT` or `DONE_WITH_CONCERNS` in that case — never return cod
 - Questions MUST end in "?" and be addressed directly to the user
 - The `why` field in NEEDS_CONTEXT is for the orchestrator only — do NOT show it to the user
 - Always save the partial artifact to engram before returning NEEDS_CONTEXT (preserves Q&A state across relay iterations)
-- On forced completion (`max_iterations_reached: true`), produce the best artifact you can with available context
 - Synthesized sections MUST NOT include specific function names, file paths, or code from user answers — paraphrase directionally
 - Return a structured envelope with: `status`, and the fields required by `skills/_shared/status-protocol.md` for that status
